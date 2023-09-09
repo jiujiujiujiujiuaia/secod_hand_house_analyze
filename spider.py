@@ -9,15 +9,15 @@ import re
 
 def getData():
 
-    b = ['建发独墅湾']
+    b = ['仁恒棠悦湾']
     script_dir = os.path.dirname(os.path.abspath(__file__))
     current_time = datetime.datetime.now()
     timestamp = current_time.strftime('%Y%m%d_%H%M%S')
-    file_name = 'beike'
+    file_name = b[0]
     timestamped_filename = f'{file_name}_{timestamp}.xls'
     file_path = os.path.join(script_dir, timestamped_filename)
     for b_1 in b:
-        for page in range(1,7):
+        for page in range(1,100):
             url = f'https://su.ke.com/chengjiao/pg{page}rs{b_1}/'
 
             h = {
@@ -31,6 +31,8 @@ def getData():
             xp = etree.HTML(res.text)
 
             list_l = xp.xpath('//ul[@class="listContent"]/li')
+            if len(list_l) == 0:
+                break
 
             datalist=[]
             pattern = r'\d+'            
@@ -59,20 +61,28 @@ def getData():
                 buildingType = positionInfo[1]
                 floorParts = floorInfo.split("(")
                 floorType = floorParts[0]
-                totalFloors = floorParts[1].strip(")")
-                matchTotalFloors = re.findall(pattern, totalFloors)
-                totalFloor = matchTotalFloors[0]
+                # 如果floorParts长度小于2，说明没有总楼层信息，此时将总楼层设置为0
+                if len(floorParts) < 2:
+                    continue
+                else:
+                    totalFloors = floorParts[1].strip(")")
+                    matchTotalFloors = re.findall(pattern, totalFloors)
+                    totalFloor = matchTotalFloors[0]
 
 
                 unitPrice = na.xpath('.//div[@class="unitPrice"]/span/text()')[0]
 
-                dealCycleTxts = na.xpath('.//span[@class="dealCycleTxt"]/span/text()')[0]
+                text =  na.xpath('.//span[@class="dealCycleTxt"]/span/text()')
+                dealCycleTxts = text[0]
                 matchDealCycleTxt = re.findall(pattern, dealCycleTxts)
                 price = matchDealCycleTxt[0] 
 
-                periods = na.xpath('.//span[@class="dealCycleTxt"]/span/text()')[1]
-                matchPeriod = re.findall(pattern, periods)
-                period = matchPeriod[0]
+                if len(text) < 2:
+                    continue
+                else:
+                    periods = text[1]
+                    matchPeriod = re.findall(pattern, periods)
+                    period = matchPeriod[0]
 
                 house = [communityName,layout,area,orientation,type,dealDate,totalPrice,buildingType,floorType,totalFloor,unitPrice,price,period]
                 datalist.append(house)
